@@ -35,7 +35,7 @@ class Shortcode extends TextFragment
         foreach ($attrsSplit as $attribute){
             if($attribute===''){continue;}
             $nameValueSplit = explode('=',$attribute);
-            $foundAttributes[] = AttributeDTO::create($nameValueSplit[0],$nameValueSplit[1]);
+            $foundAttributes[] = AttributeDTO::create($nameValueSplit[0],isset($nameValueSplit[1])?$nameValueSplit[1]:'');
         }
         return $foundAttributes;
     }
