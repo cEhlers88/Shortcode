@@ -7,6 +7,9 @@ use CEhlers\Shortcode\DTO\AttributeDTO;
 class Shortcode extends TextFragment
 {
     private string $name;
+    /**
+     * @var AttributeDTO[]
+     */
     private array $attributes;
     private array $innerFragments;
 
@@ -37,8 +40,20 @@ class Shortcode extends TextFragment
         return $foundAttributes;
     }
 
+    /**
+     * @return AttributeDTO[]
+     */
     public function getAttributes():array{
         return $this->attributes;
+    }
+
+    public function getAttributeValue(string $attributeName, string $defaultValue=""){
+        foreach ($this->attributes as $attribute){
+            if($attribute->name===$attributeName){
+                return $attribute->value;
+            }
+        }
+        return $defaultValue;
     }
 
     public function getName():string {

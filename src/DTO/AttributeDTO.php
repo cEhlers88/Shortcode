@@ -10,9 +10,10 @@ class AttributeDTO
 
     public static function create($name, $value):AttributeDTO {
         $dto = new AttributeDTO();
+
         $dto->name = $name;
         $dto->type =str_contains(strtolower($value),'true') || str_contains(strtolower($value),'false') ? 'boolean' : ($value[0]==='\'' || $value[0]==='\"' ? 'string':'number');
-        $dto->value = str_replace(['\'','\"'],[''],$value)  ;
+        $dto->value = ($value[0]==='"' || $value[0]==="'")? substr($value,1,strlen($value)-2) : $value;
 
         return $dto;
     }
