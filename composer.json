@@ -1,0 +1,25 @@
+{
+    "name": "cehlers/shortcode",
+    "description": "Library to handle shortcodes in PHP",
+    "type": "library",
+    "license": "GPL",
+    "authors": [
+        {
+            "name": "Christoph Ehlers",
+            "email": "Christoph.Ehlers1988@gmx.de"
+        }
+    ],
+    "scripts": {
+        "tests": "phpunit tests"
+    },
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "CEhlers\\Shortcode\\": "src/",
+            "CEhlers\\Shortcode\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9"
+    }
+}
