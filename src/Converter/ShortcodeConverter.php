@@ -2,6 +2,7 @@
 
 namespace CEhlers\Shortcode\Converter;
 
+use CEhlers\Shortcode\AbstractFragmentObject;
 use CEhlers\Shortcode\DTO\ConverterResultDTO;
 use CEhlers\Shortcode\DTO\MessageDTO;
 use CEhlers\Shortcode\Shortcode;
@@ -12,6 +13,7 @@ class ShortcodeConverter
 {
     private const EXECUTION_TYPE_CONVERT = "EXECUTION_TYPE_CONVERT";
     private const EXECUTION_TYPE_VALIDATE = "EXECUTION_TYPE_VALIDATE";
+
     private string $executionType;
     /**
      * @var IConverterRule
@@ -20,6 +22,11 @@ class ShortcodeConverter
 
     public function __construct(array $rules = []){
         $this->rules = $rules;
+    }
+
+    public function addRule(IConverterRule $converterRule):ShortcodeConverter {
+        $this->rules[] = $converterRule;
+        return $this;
     }
 
     private function __execute(ConverterResultDTO $resultDTO, $shortcodes):ConverterResultDTO{
@@ -32,7 +39,7 @@ class ShortcodeConverter
         }
 
         foreach ($parsedFragments as $parsedFragment){
-            if($parsedFragment instanceof Shortcode){
+            if($parsedFragment instanceof AbstractFragmentObject){
                 foreach ($this->rules as $rule){
                     if($rule->canHandle($parsedFragment)){
                         $parsedFragment = $rule->handle($parsedFragment);
