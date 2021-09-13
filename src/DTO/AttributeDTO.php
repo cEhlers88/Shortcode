@@ -18,7 +18,7 @@ class AttributeDTO
             $dto->type = str_contains(strtolower($value),'true') || str_contains(strtolower($value),'false') ? 'boolean' : ($value[0]==='"' || $value[0]==="'"?'string':'number');
             $dto->value = ($value[0]==='"' || $value[0]==="'")? substr($value,1,strlen($value)-2) : $value;
         }
-    
+
         return $dto;
     }
 

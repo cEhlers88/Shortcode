@@ -2,16 +2,16 @@
 
 namespace CEhlers\Shortcode;
 
-class Shortcode extends AbstractFragmentObject
+class DomNode extends AbstractFragmentObject
 {
     public function getTagStart(): string
     {
-        return "[";
+        return "<";
     }
 
     public function getTagEnd(): string
     {
-        return "]";
+        return ">";
     }
 
     public function getTagClose(): string
