@@ -3,11 +3,14 @@
 namespace CEhlers\Shortcode\Converter;
 
 use CEhlers\Shortcode\AbstractFragmentObject;
-use CEhlers\Shortcode\Shortcode;
+use CEhlers\Shortcode\DTO\ConvertAssignmentDTO;
+use cehlers\shortcode\DTO\RuleHandleResultDTO;
 use CEhlers\Shortcode\TextFragment;
 
 interface IConverterRule
 {
-    public function canHandle(AbstractFragmentObject $shortcode):bool;
-    public function handle(AbstractFragmentObject $shortcode):TextFragment;
+    public function getDescription():string;
+    public function getName():string;
+    public function canHandle(ConvertAssignmentDTO $convertAssignmentDTO):bool;
+    public function handle(ConvertAssignmentDTO $convertAssignmentDTO):RuleHandleResultDTO;
 }

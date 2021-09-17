@@ -17,7 +17,10 @@ class ShortcodeParser
             $shortcodeLastEnd = $shortcodeEndBegin+$lenClosingTag;
 
             if($shortcodeStart>0){
-                $result[] = new TextFragment(substr($string,0,$shortcodeStart));
+                $raw = substr($string,0,$shortcodeStart);
+                if(!empty(trim($raw))){
+                    $result[] = new TextFragment($raw);
+                }
             }
 
             $shortcode = new Shortcode(substr($string,$shortcodeStart,$shortcodeLastEnd-$shortcodeStart));
@@ -26,7 +29,10 @@ class ShortcodeParser
             ;
             $result[] = $shortcode;
             if($shortcodeLastEnd<strlen($string)){
-                $result = array_merge($result,ShortcodeParser::parse(substr($string,$shortcodeLastEnd)));
+                $rest = substr($string,$shortcodeLastEnd);
+                if(!empty(trim($rest))){
+                $result = array_merge($result,ShortcodeParser::parse($rest));
+                }
             }
         }else{
             if(!empty($string)){

@@ -11,6 +11,9 @@ class TextFragment
     }
 
     public function __toString(){return $this->rawText;}
+    public function toHtmlList(){
+        return "<li class='fragment fragment--text'>".$this."</li>";
+    }
     public function getInnerFragments(){return [];}
 
     public function getRaw():string {return $this->rawText;}

@@ -2,7 +2,7 @@
 
 namespace CEhlers\Shortcode\DTO;
 
-class MessageDTO
+class MessageDTO extends DTO
 {
     public const MESSAGE_TYPE_DEBUG = "DEBUG";
     public const MESSAGE_TYPE_INFO = "INFORMATION";
@@ -17,5 +17,15 @@ class MessageDTO
         $dto->type = $type;
         $dto->text = $text;
         return $dto;
+    }
+
+    public function getCssClass():string{
+        switch ($this->type){
+            case MessageDTO::MESSAGE_TYPE_DEBUG: return 'alert-debug'; break;
+            case MessageDTO::MESSAGE_TYPE_INFO: return 'alert-info'; break;
+            case MessageDTO::MESSAGE_TYPE_ERROR: return 'alert-error'; break;
+            case MessageDTO::MESSAGE_TYPE_WARNING: return 'alert-warning'; break;
+            default: return "alert-warning"; break;
+        }
     }
 }
