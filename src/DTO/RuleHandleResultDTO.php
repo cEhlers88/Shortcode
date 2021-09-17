@@ -1,6 +1,6 @@
 <?php
 
-namespace cehlers\shortcode\DTO;
+namespace CEhlers\Shortcode\DTO;
 
 use CEhlers\Shortcode\TextFragment;
 
@@ -10,9 +10,6 @@ class RuleHandleResultDTO extends DTO
      * @var MessageDTO[]
      */
     public array $messages=[];
-    /**
-     * @var TextFragment
-     */
-    public array $fragment;
+    public TextFragment $fragment;
     public bool $hadError=false;
 }
