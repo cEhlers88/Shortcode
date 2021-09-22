@@ -4,7 +4,7 @@ namespace CEhlers\Shortcode\Converter;
 
 use CEhlers\Shortcode\AbstractFragmentObject;
 use CEhlers\Shortcode\DTO\ConvertAssignmentDTO;
-use CacheExceptionhlers\Shortcode\DTO\RuleHandleResultDTO;
+use CEhlers\Shortcode\DTO\RuleHandleResultDTO;
 use CEhlers\Shortcode\TextFragment;
 
 interface IConverterRule
