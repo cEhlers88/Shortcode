@@ -6,13 +6,13 @@ use CEhlers\Shortcode\DTO\AttributeDTO;
 
 abstract class AbstractFragmentObject extends TextFragment
 {
+    private array $metaInfos;
     private string $name;
     /**
      * @var AttributeDTO[]
      */
     private array $attributes;
     private array $innerFragments;
-    private string $syncKey;
 
     abstract public function getTagStart():string;
     abstract public function getTagEnd():string;
@@ -20,9 +20,9 @@ abstract class AbstractFragmentObject extends TextFragment
 
     public function __construct(string $rawText="",string $name="") {
         parent::__construct($rawText);
+        $this->metaInfos = [];
         $this->name = $name;
         $this->attributes = [];
-        $this->syncKey = uniqid('sk-');
         $posAttributesStart = strpos($rawText,' ');
         $posAttributesEnd = strpos($rawText,']');
 
@@ -60,6 +60,17 @@ abstract class AbstractFragmentObject extends TextFragment
             return array_merge([AttributeDTO::create($attrName,$attrValue)],$this->parseAttributes($rest));
         }
         return [AttributeDTO::create($attrName,$attrValue)];
+    }
+
+    final public function addMetaInfo(string $metaKey, string $metaValue):AbstractFragmentObject {
+        $this->metaInfos[$metaKey] = $metaValue;
+        return $this;
+    }
+    final public function getMetaInfo(string $metaKey,string $defaultValue=""):string {
+        if(array_key_exists($metaKey,$this->metaInfos)){
+            return $this->metaInfos[$metaKey];
+        }
+        return $defaultValue;
     }
 
     /**
@@ -101,13 +112,19 @@ abstract class AbstractFragmentObject extends TextFragment
         $attributes = "";
         $childs = "";
         $buttons = "";
+        $hasGrandChilds = false;
+
         if($this->hasChildFragments()){
-            $buttons .= "<button class='js-toggle-children badge btn-secondary mx-1'>Show childs</button>";
+            $buttons .= "<button data-type='children' class='js-toggle-children badge btn-secondary mx-1'>Show children</button>";
             $childs="<ul>";
             foreach ($this->innerFragments as $innerFragment){
+                if($innerFragment instanceof AbstractFragmentObject && $innerFragment->hasChildFragments()){$hasGrandChilds = true;}
                 $childs.= $innerFragment->toHtmlList();
             }
             $childs.="</ul>";
+        }
+        if($hasGrandChilds){
+            $buttons .= "<button data-type='all' class='js-toggle-children badge btn-secondary mx-1'>Show all children</button>";
         }
         if($this->hasAttributes()){
             $buttons .= "<button class='js-toggle-attribute badge btn-secondary ".($buttons===''?'mx-1':'')."'>Show attributes</button>";
@@ -128,7 +145,7 @@ abstract class AbstractFragmentObject extends TextFragment
         }
 
         return sprintf('<li class="%s">[<small>%s</small>(%s)%s]%s%s</li>',
-            $this->getSyncKey(),
+            $this->getSyncKey().($this->getMetaInfo('rule-found','true')!=='true'?' no-converter-rule':'').' ',
             str_replace(__NAMESPACE__.'\\','',get_class($this)),
             $this->getName(),
             $attributes,
@@ -152,11 +169,15 @@ abstract class AbstractFragmentObject extends TextFragment
         return $this;
     }
 
-    final public function getSyncKey():string{
-        return $this->syncKey;
-    }
-    final public function setSyncKey(string $syncKey):AbstractFragmentObject{
+    final public function setSyncKey(string $syncKey):TextFragment{
+        $currentSyncKey = $this->getSyncKey();
         $this->syncKey = $syncKey;
+        foreach ($this->innerFragments as $innerFragment){
+            if($innerFragment->getSyncKey()===$currentSyncKey){
+                $innerFragment->setSyncKey($syncKey);
+            }
+        }
         return $this;
     }
+
 }

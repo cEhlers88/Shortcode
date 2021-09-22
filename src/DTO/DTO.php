@@ -1,6 +1,6 @@
 <?php
 
-namespace cehlers\shortcode\DTO;
+namespace CEhlers\Shortcode\DTO;
 
 abstract class DTO
 {

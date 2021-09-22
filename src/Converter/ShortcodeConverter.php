@@ -55,6 +55,8 @@ class ShortcodeConverter
         }
 
         foreach ($parsedFragments as $parsedFragment){
+            $syncKey = $parsedFragment->getSyncKey();
+
             if($parsedFragment instanceof AbstractFragmentObject){
                 $ruleFound=false;
                 $convertedInner = $this->__execute(new ConverterResultDTO(),$parsedFragment->getInnerFragments(), $parsedFragment,$depth+1);
@@ -67,23 +69,21 @@ class ShortcodeConverter
                 foreach ($this->rules as $rule){
                     if($rule->canHandle($assignmentDTO)){
                         $ruleFound = true;
-                        $syncKey = $parsedFragment->getSyncKey();
                         $handleResult = $rule->handle($assignmentDTO);
                         if($handleResult->hadError){$resultDTO->hadError=true;}
                         $parsedFragment = $handleResult->fragment;
                         $resultDTO->messages = array_merge($resultDTO->messages, $handleResult->messages);
 
-                        if($parsedFragment instanceof AbstractFragmentObject){
-                            $parsedFragment->setSyncKey($syncKey);
-                        }
                     }
                 }
                 if(!$ruleFound){
+                    $parsedFragment->addMetaInfo('rule-found','false');
                     if($this->executionType===self::EXECUTION_TYPE_VALIDATE){
                         $resultDTO->unregulatedFragmentNames[] = $parsedFragment->getName();
                     }
                 }
             }
+            $parsedFragment->setSyncKey($syncKey);
             $resultDTO->fragments[] = $parsedFragment;
         }
         if(is_null($parentFragment) && count($resultDTO->unregulatedFragmentNames)>0){

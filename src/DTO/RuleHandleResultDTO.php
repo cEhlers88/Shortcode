@@ -12,4 +12,10 @@ class RuleHandleResultDTO extends DTO
     public array $messages=[];
     public TextFragment $fragment;
     public bool $hadError=false;
+
+    static public function create(TextFragment $fragment):RuleHandleResultDTO {
+        $dto = new RuleHandleResultDTO();
+        $dto->fragment = $fragment;
+        return $dto;
+    }
 }

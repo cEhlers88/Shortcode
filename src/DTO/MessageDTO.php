@@ -23,7 +23,7 @@ class MessageDTO extends DTO
         switch ($this->type){
             case MessageDTO::MESSAGE_TYPE_DEBUG: return 'alert-debug'; break;
             case MessageDTO::MESSAGE_TYPE_INFO: return 'alert-info'; break;
-            case MessageDTO::MESSAGE_TYPE_ERROR: return 'alert-error'; break;
+            case MessageDTO::MESSAGE_TYPE_ERROR: return 'alert-danger'; break;
             case MessageDTO::MESSAGE_TYPE_WARNING: return 'alert-warning'; break;
             default: return "alert-warning"; break;
         }

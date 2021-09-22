@@ -42,4 +42,12 @@ class ShortcodeParser
 
         return $result;
     }
+    
+    public static function parseToString(string $string):string {
+        $result = '';
+        foreach (self::parse($string) as $fragment){
+            $result .= $fragment;
+        }
+        return $result;
+    }
 }
