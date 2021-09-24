@@ -24,12 +24,13 @@ abstract class AbstractFragmentObject extends TextFragment
         $this->name = $name;
         $this->attributes = [];
         $posAttributesStart = strpos($rawText,' ');
-        $posAttributesEnd = strpos($rawText,']');
-
-        $innerText = substr($rawText,$posAttributesEnd+1, strrpos($rawText,'[')-$posAttributesEnd-1);
+        $posAttributesEnd = strpos($rawText,$this->getTagEnd());
+        $posCloseSign = strpos($rawText, $this->getTagClose());
+        $this->addMetaInfo('singleTag',($posCloseSign===$posAttributesEnd-1?'true':'false'));
+        $innerText = substr($rawText,$posAttributesEnd+1, strrpos($rawText,$this->getTagStart())-$posAttributesEnd-1);
         $this->innerFragments = ShortcodeParser::parse($innerText);
 
-        if($posAttributesStart>0 && $posAttributesEnd>$posAttributesStart){
+        if($posAttributesStart>0 && $posAttributesEnd-$posAttributesStart>3){
             $this->attributes = $this->parseAttributes(substr($rawText,$posAttributesStart,$posAttributesEnd-$posAttributesStart));
         }
 
@@ -40,7 +41,6 @@ abstract class AbstractFragmentObject extends TextFragment
         $posEqualSign = strpos($attributesString,'=');
         $attrName = trim(substr($attributesString, 0, $posEqualSign));
 
-        //$foundAttributes[] = AttributeDTO::create($attributeName,"");
         if($posEqualSign<strlen($attributesString)){
             $firstSign = strtolower($attributesString[$posEqualSign+1]);
             if($firstSign==='"' || $firstSign==="'"){
@@ -56,7 +56,7 @@ abstract class AbstractFragmentObject extends TextFragment
             $attrValue = substr($attributesString, $posEqualSign+1,$lengthValue+2);
             $rest = substr($attributesString, $posEqualSign+1+strlen($attrValue));
         }
-        if(!empty(trim($rest))){
+        if(!empty(trim($rest)) && strlen($rest)>1){
             return array_merge([AttributeDTO::create($attrName,$attrValue)],$this->parseAttributes($rest));
         }
         return [AttributeDTO::create($attrName,$attrValue)];
@@ -155,6 +155,9 @@ abstract class AbstractFragmentObject extends TextFragment
 
     public function getInnerFragments(){
         return $this->innerFragments;
+    }
+    public function getInnerFragment(int $index):?TextFragment {
+        return $this->innerFragments[$index];
     }
     public function setInnerFragments(array $fragments):AbstractFragmentObject {
         $this->innerFragments = $fragments;

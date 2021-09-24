@@ -63,12 +63,23 @@ class ShortcodeParserTest extends TestCase
         $this->assertSame("boolean",$parsed[0]->getAttributes()[4]->type);
     }
 
+    public function testSingleTags(){
+        $parsed = ShortcodeParser::parse("[foo][bar foo='bar'/][bar2][bar foo='bar2'/][/bar2][/foo]");
+        $this->assertCount(2,$parsed[0]->getInnerFragments());
+        $this->assertSame('bar',$parsed[0]->getInnerFragment(0)->getAttributeValue('foo'));
+    }
+    public function testSingleTagAttributes(){
+        $parsed = ShortcodeParser::parse("[foo bar='foo'/]");
+        $this->assertCount(1,$parsed);
+        $this->assertSame('foo',$parsed[0]->getAttributeValue('bar'));
+    }
+
     public function test(){
         $parsed = ShortcodeParser::parse("[Foo] [Bar]Content[/Bar][Bar][/Bar]Content[/Foo]");
         $this->assertInstanceOf(Shortcode::class, $parsed[0]);
         $this->assertCount(1, $parsed);
         $this->assertCount(3, $parsed[0]->getInnerFragments());
-        $this->assertCount(1, $parsed[0]->getInnerFragments()[0]->getInnerFragments());
+        $this->assertCount(1, $parsed[0]->getInnerFragment(0)->getInnerFragments());
     }
 
 }

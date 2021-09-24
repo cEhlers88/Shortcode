@@ -14,6 +14,11 @@ class ShortcodeParser
             $shortcodeStart = strpos($string,'['.$matches[1]);
             $shortcodeEndBegin = strpos($string,'[/'.$matches[1].']');
             $lenClosingTag = strlen('[/'.$matches[1].']');
+            if(!$shortcodeEndBegin){
+                $shortcodeEndBegin = strpos($string,'/]');
+                $lenClosingTag = 2;
+
+            }
             $shortcodeLastEnd = $shortcodeEndBegin+$lenClosingTag;
 
             if($shortcodeStart>0){
