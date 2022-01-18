@@ -2,6 +2,8 @@
 
 namespace CEhlers\Shortcode\DTO;
 
+use CEhlers\Shortcode\AttributeHelper;
+
 class AttributeDTO extends DTO
 {
     public string $name;
@@ -31,6 +33,7 @@ class AttributeDTO extends DTO
     }
 
     public function __toString(){
-        return $this->name.($this->type==='flag'?'':'='.($this->type==='string'?'"':'').$this->value.($this->type==='string'?'"':''));
+        return AttributeHelper::attributeToString($this);
+        //return $this->name.($this->type==='flag'?'':'='.($this->type==='string'?'"':'').$this->value.($this->type==='string'?'"':''));
     }
 }

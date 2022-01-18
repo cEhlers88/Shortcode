@@ -14,11 +14,17 @@ class ShortcodeParser
             $shortcodeStart = strpos($string,'['.$matches[1]);
             $shortcodeEndBegin = strpos($string,'[/'.$matches[1].']');
             $lenClosingTag = strlen('[/'.$matches[1].']');
+
             if(!$shortcodeEndBegin){
                 $shortcodeEndBegin = strpos($string,'/]');
                 $lenClosingTag = 2;
-
             }
+
+            if(!$shortcodeEndBegin){
+                $shortcodeEndBegin = strpos($string,']');
+                $lenClosingTag = 1;
+            }
+
             $shortcodeLastEnd = $shortcodeEndBegin+$lenClosingTag;
 
             if($shortcodeStart>0){
@@ -28,10 +34,8 @@ class ShortcodeParser
                 }
             }
 
-            $shortcode = new Shortcode(substr($string,$shortcodeStart,$shortcodeLastEnd-$shortcodeStart));
-            $shortcode
-                ->setName($matches[1])
-            ;
+            $shortcode = new Shortcode(substr($string,$shortcodeStart,$shortcodeLastEnd-$shortcodeStart),$matches[1]);
+
             $result[] = $shortcode;
             if($shortcodeLastEnd<strlen($string)){
                 $rest = substr($string,$shortcodeLastEnd);
@@ -41,13 +45,14 @@ class ShortcodeParser
             }
         }else{
             if(!empty($string)){
-                $result[] = new TextFragment($string);
+                $result = array_merge($result, DomParser::parse($string));
+                //$result[] = new TextFragment($string);
             }
         }
 
         return $result;
     }
-    
+
     public static function parseToString(string $string):string {
         $result = '';
         foreach (self::parse($string) as $fragment){

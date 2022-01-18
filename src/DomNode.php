@@ -18,4 +18,9 @@ class DomNode extends AbstractFragmentObject
     {
         return "/";
     }
+
+    public function getFragmentTypeName(): string
+    {
+        return "HTML DOM-Node";
+    }
 }

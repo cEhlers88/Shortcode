@@ -4,15 +4,11 @@ namespace CEhlers\Shortcode\DTO;
 
 use CEhlers\Shortcode\TextFragment;
 
-class ConverterResultDTO extends DTO
+class ConverterResultDTO extends HandleFragmentResultDTO
 {
-    /**
-     * @var MessageDTO[]
-     */
-    public array $messages=[];
     public array $fragments=[];
+    public ?array $originalFragments=null;
     public array $unregulatedFragmentNames=[];
-    public bool $hadError=false;
 
     public function __toString(){
         $result = "";

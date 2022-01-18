@@ -18,4 +18,9 @@ class Shortcode extends AbstractFragmentObject
     {
         return "/";
     }
+
+    public function getFragmentTypeName(): string
+    {
+        return "Shortcode";
+    }
 }

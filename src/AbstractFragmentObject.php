@@ -3,10 +3,12 @@
 namespace CEhlers\Shortcode;
 
 use CEhlers\Shortcode\DTO\AttributeDTO;
+use function Symfony\Component\String\s;
 
 abstract class AbstractFragmentObject extends TextFragment
 {
-    private array $metaInfos;
+    public const ATTRIBUTE_TYPE_DEFAULT = "default";
+    public const ATTRIBUTE_TYPE_JSON = "json";
     private string $name;
     /**
      * @var AttributeDTO[]
@@ -17,62 +19,103 @@ abstract class AbstractFragmentObject extends TextFragment
     abstract public function getTagStart():string;
     abstract public function getTagEnd():string;
     abstract public function getTagClose():string;
+    abstract public function getFragmentTypeName():string;
 
     public function __construct(string $rawText="",string $name="") {
         parent::__construct($rawText);
-        $this->metaInfos = [];
+
         $this->name = $name;
         $this->attributes = [];
-        $posAttributesStart = strpos($rawText,' ');
+        $posAttributesStart = strpos($rawText,$name)+strlen($name);
         $posAttributesEnd = strpos($rawText,$this->getTagEnd());
         $posCloseSign = strpos($rawText, $this->getTagClose());
-        $this->addMetaInfo('singleTag',($posCloseSign===$posAttributesEnd-1?'true':'false'));
-        $innerText = substr($rawText,$posAttributesEnd+1, strrpos($rawText,$this->getTagStart())-$posAttributesEnd-1);
-        $this->innerFragments = ShortcodeParser::parse($innerText);
+
+        $this->addMetaInfo('singleTag',($this->isSingleTag()?'true':'false'));
+
+        if(!$this->isSingleTag()){
+            $innerText = substr($rawText,$posAttributesEnd+strlen($this->getTagEnd()), strrpos($rawText,$this->getTagStart())-$posAttributesEnd-strlen($this->getTagEnd()));
+            $this->innerFragments = ShortcodeParser::parse($innerText);
+        }else{
+            $this->innerFragments = [];
+        }
 
         if($posAttributesStart>0 && $posAttributesEnd-$posAttributesStart>3){
             $this->attributes = $this->parseAttributes(substr($rawText,$posAttributesStart,$posAttributesEnd-$posAttributesStart));
         }
+    }
 
+    public function isSingleTag():bool {
+        $posAttributesEnd = strpos($this->getRaw(),$this->getTagEnd());
+        return substr($this->getRaw(), $posAttributesEnd-1,1) === $this->getTagClose();
     }
 
     private function parseAttributes(string $attributesString):array{
-        $rest = "";
-        $posEqualSign = strpos($attributesString,'=');
-        $attrName = trim(substr($attributesString, 0, $posEqualSign));
 
-        if($posEqualSign<strlen($attributesString)){
-            $firstSign = strtolower($attributesString[$posEqualSign+1]);
-            if($firstSign==='"' || $firstSign==="'"){
-                $attrType='string';
-            }else{
-                if($firstSign==='t' || $firstSign==="f") {
-                    $attrType = 'boolean';
-                }else{
-                    $attrType = 'number';
+        switch ($this->getAttributesType()){
+            case AbstractFragmentObject::ATTRIBUTE_TYPE_DEFAULT:
+
+                $rest = "";
+                $posEqualSign = strpos($attributesString,'=');
+                $attrName = trim(substr($attributesString, 0, $posEqualSign));
+
+                if($posEqualSign<strlen($attributesString)){
+                    $firstSign = strtolower($attributesString[$posEqualSign+1]);
+                    if($firstSign==='"' || $firstSign==="'"){
+                        $attrType='string';
+                    }else{
+                        if($firstSign==='t' || $firstSign==="f") {
+                            $attrType = 'boolean';
+                        }else{
+                            $attrType = 'number';
+                        }
+                    }
+                    $lengthValue = strpos(substr($attributesString,$posEqualSign+2),($attrType==='string'?$firstSign:' '));
+                    $attrValue = substr($attributesString, $posEqualSign+1,$lengthValue+2);
+                    $rest = substr($attributesString, $posEqualSign+1+strlen($attrValue));
                 }
-            }
-            $lengthValue = strpos(substr($attributesString,$posEqualSign+2),($attrType==='string'?$firstSign:' '));
-            $attrValue = substr($attributesString, $posEqualSign+1,$lengthValue+2);
-            $rest = substr($attributesString, $posEqualSign+1+strlen($attrValue));
+                if(!empty(trim($rest)) && strlen(trim($rest))>1 && trim($rest)!=='/'){
+                    return array_merge([AttributeDTO::create($attrName,$attrValue)],$this->parseAttributes($rest));
+                }
+                return [AttributeDTO::create($attrName,$attrValue)];
+
+                break;
+            case AbstractFragmentObject::ATTRIBUTE_TYPE_JSON:
+                $result = [];
+                try{
+                    $json = json_decode($attributesString);
+                    foreach ($json as $name=>$value){
+                        $result[] = AttributeDTO::create($name, $value);
+                    }
+                }catch (\Exception $exception){}
+                return $result;
+
+                break;
         }
-        if(!empty(trim($rest)) && strlen($rest)>1){
-            return array_merge([AttributeDTO::create($attrName,$attrValue)],$this->parseAttributes($rest));
-        }
-        return [AttributeDTO::create($attrName,$attrValue)];
+
     }
 
-    final public function addMetaInfo(string $metaKey, string $metaValue):AbstractFragmentObject {
-        $this->metaInfos[$metaKey] = $metaValue;
+    private function validateAttributes():AbstractFragmentObject {
+        $attributeIndex = [];
+        /** @var AttributeDTO[] $validatedAttributes */
+        $validatedAttributes = [];
+
+        foreach ($this->attributes as $attribute){
+            if(isset($attributeIndex[$attribute->name])){
+                $index = $attributeIndex[$attribute->name];
+                $validatedAttributes[$index]->value .= " ".$attribute->value;
+            }else{
+                $attributeIndex[$attribute->name] = count($validatedAttributes);
+                $validatedAttributes[] = $attribute;
+            }
+        }
+
+        $this->attributes = $validatedAttributes;
         return $this;
     }
-    final public function getMetaInfo(string $metaKey,string $defaultValue=""):string {
-        if(array_key_exists($metaKey,$this->metaInfos)){
-            return $this->metaInfos[$metaKey];
-        }
-        return $defaultValue;
-    }
 
+    public function getAttributesType():string{
+        return AbstractFragmentObject::ATTRIBUTE_TYPE_DEFAULT;
+    }
     /**
      * @return AttributeDTO[]
      */
@@ -84,7 +127,11 @@ abstract class AbstractFragmentObject extends TextFragment
     }
     public function addAttribute(AttributeDTO $attribute):AbstractFragmentObject {
         $this->attributes[] = $attribute;
-        return $this;
+        return $this->validateAttributes();
+    }
+    public function addAttributes(array $attributes):AbstractFragmentObject {
+        $this->attributes = array_merge($this->attributes, $attributes);
+        return $this->validateAttributes();
     }
     public function hasAttributes():bool{
         return (count($this->attributes)>0);
@@ -97,17 +144,68 @@ abstract class AbstractFragmentObject extends TextFragment
         }
         return $defaultValue;
     }
+    public function setAttribute(AttributeDTO $attributeDTO):AbstractFragmentObject {
+        $index = -1;
+        $found = false;
+        foreach ($this->attributes as $attribute){
+            $index++;
+            if($attribute->name===$attributeDTO->name){
+                $found = true;
+                $this->attributes[$index] = $attributeDTO;
+                break;
+            }
+        }
+        if(!$found){
+            $this->addAttribute($attributeDTO);
+        }
+        return $this;
+    }
 
     public function __toString()
     {
-        $attributes = (count($this->attributes)>0?' ':'');
+        $attributes = ' ';//(count($this->attributes)>0?' ':'');
         $inner = '';
-        foreach ($this->attributes as $attribute){$attributes.=$attribute.' ';}
+
+        if(count($this->attributes)>0){
+            $seperator = ' ';
+            if($this->getAttributesType()===self::ATTRIBUTE_TYPE_JSON){
+                $attributes .= '{';
+                $seperator = ',';
+            }
+
+            foreach ($this->attributes as $attribute){
+                $attributes.=AttributeHelper::attributeToString($attribute,$this->getAttributesType()).$seperator;
+            }
+
+            if($this->getAttributesType()===self::ATTRIBUTE_TYPE_JSON){
+                $attributes = substr($attributes,0,strlen($attributes)-1). '} ';
+            }
+        }
+
         foreach ($this->innerFragments as $fragment){$inner.=$fragment;}
 
         return sprintf($this->getTagStart()."%s%s".$this->getTagEnd()."%s".$this->getTagStart().$this->getTagClose()."%s".$this->getTagEnd(),
             $this->name,$attributes,$inner,$this->name);
     }
+    public function toJson(): string
+    {
+        $childs =  [];
+        foreach ($this->innerFragments as $fragment){
+            $childs[] = json_decode($fragment->toJson());
+        }
+        return json_encode([
+            'attributes' => $this->getAttributes(),
+            'childs' => $childs,
+            'fragmentType' => $this->getFragmentTypeName(),
+            'metaInfos' => $this->getMetaInfos(),
+            'name' => $this->getName(),
+            'id' => $this->getId(),
+            'syncKey' => $this->syncKey,
+            'objectList' => $this->getInnerFragmentNames(true)
+
+        ]);
+    }
+
     public function toHtmlList(){
         $attributes = "";
         $childs = "";
@@ -137,7 +235,7 @@ abstract class AbstractFragmentObject extends TextFragment
                     $color = 'orange';
                 }
 
-                $attributes.=sprintf('<span style="color:%s;">%s</span>',
+                $attributes.=sprintf('<span style="color:%s;">%s </span>',
                     $color,
                     $attribute);
             }
@@ -153,15 +251,51 @@ abstract class AbstractFragmentObject extends TextFragment
             $childs);
     }
 
+    public function addInnerFragment(TextFragment $fragmentObject):AbstractFragmentObject{
+        $this->innerFragments[] = $fragmentObject;
+        return $this;
+    }
     public function getInnerFragments(){
         return $this->innerFragments;
     }
     public function getInnerFragment(int $index):?TextFragment {
         return $this->innerFragments[$index];
     }
+    public function getInnerFragmentNames(bool $grouped = false):array{
+        $result = ($grouped? [$this->getFragmentTypeName() => [$this->getName()]] : [$this->getName()]);
+
+        foreach ($this->getInnerFragments() as $innerFragment){
+            if($innerFragment instanceof AbstractFragmentObject){
+                if($grouped){
+                    foreach ($innerFragment->getInnerFragmentNames(true) as $groupKey=>$groupValue){
+                        foreach ($groupValue as $name){
+                            if(!isset($result[$groupKey])){$result[$groupKey]=[];}
+                            $result[$groupKey][] = $name;
+                        }
+                    }
+                }else{
+                    foreach ($this->getInnerFragmentNames(false) as $name){
+                        $result[] = $name;
+                    }
+                }
+
+            }
+        }
+
+        return $result;
+    }
     public function setInnerFragments(array $fragments):AbstractFragmentObject {
         $this->innerFragments = $fragments;
         return $this;
+    }
+    public function hasChildClass(string $className):bool {
+        foreach ($this->innerFragments as $innerFragment){
+            if($innerFragment instanceof AbstractFragmentObject){
+                if(get_class($innerFragment)===$className){return true;}
+                if($innerFragment->hasChildClass($className)){return true;}
+            }
+        }
+        return false;
     }
 
     public function getName():string {
