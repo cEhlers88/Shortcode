@@ -20,6 +20,7 @@ abstract class AbstractFragmentObject extends TextFragment
     abstract public function getTagEnd():string;
     abstract public function getTagClose():string;
     abstract public function getFragmentTypeName():string;
+    private $debug = 0;
 
     public function __construct(string $rawText="",string $name="") {
         parent::__construct($rawText);
@@ -50,29 +51,48 @@ abstract class AbstractFragmentObject extends TextFragment
     }
 
     private function parseAttributes(string $attributesString):array{
-
         switch ($this->getAttributesType()){
             case AbstractFragmentObject::ATTRIBUTE_TYPE_DEFAULT:
-
                 $rest = "";
                 $posEqualSign = strpos($attributesString,'=');
-                $attrName = trim(substr($attributesString, 0, $posEqualSign));
+                $posNextSpace = strpos(trim($attributesString),' ');
 
-                if($posEqualSign<strlen($attributesString)){
-                    $firstSign = strtolower($attributesString[$posEqualSign+1]);
-                    if($firstSign==='"' || $firstSign==="'"){
-                        $attrType='string';
+                if(!$posEqualSign || ($posNextSpace && $posNextSpace<$posEqualSign)){
+                    // flag attribute
+                    $attrName = substr(trim($attributesString), 0, $posNextSpace);
+                    $attrValue = "";
+                    if($posNextSpace){
+                        $rest = substr(trim($attributesString), $posNextSpace);
                     }else{
-                        if($firstSign==='t' || $firstSign==="f") {
-                            $attrType = 'boolean';
-                        }else{
-                            $attrType = 'number';
-                        }
+                        $attrName = trim($attributesString);
+                        $rest = "";
                     }
-                    $lengthValue = strpos(substr($attributesString,$posEqualSign+2),($attrType==='string'?$firstSign:' '));
-                    $attrValue = substr($attributesString, $posEqualSign+1,$lengthValue+2);
-                    $rest = substr($attributesString, $posEqualSign+1+strlen($attrValue));
+
+                }else{
+                    // normal attribute
+                    $attrName = trim(substr($attributesString, 0, $posEqualSign));
+
+                    if($posEqualSign<strlen($attributesString)){
+                        $firstSign = strtolower($attributesString[$posEqualSign+1]);
+                        if($firstSign==='"' || $firstSign==="'"){
+                            $attrType='string';
+                        }else{
+                            if($firstSign==='t' || $firstSign==="f") {
+                                $attrType = 'boolean';
+                            }else{
+                                $attrType = 'number';
+                            }
+                        }
+                        $lengthValue = strpos(substr($attributesString,$posEqualSign+2),($attrType==='string'?$firstSign:' '));
+                        $attrValue = substr($attributesString, $posEqualSign+1,$lengthValue+2);
+                        $rest = substr($attributesString, $posEqualSign+1+strlen($attrValue));
+                    }
+
+                    if($this->debug>0){
+                        echo "| aussen |". $attributesString;
+                    }
                 }
+
                 if(!empty(trim($rest)) && strlen(trim($rest))>1 && trim($rest)!=='/'){
                     return array_merge([AttributeDTO::create($attrName,$attrValue)],$this->parseAttributes($rest));
                 }
@@ -87,11 +107,12 @@ abstract class AbstractFragmentObject extends TextFragment
                         $result[] = AttributeDTO::create($name, $value);
                     }
                 }catch (\Exception $exception){}
+
                 return $result;
 
                 break;
         }
-
+        return [];
     }
 
     private function validateAttributes():AbstractFragmentObject {
@@ -163,7 +184,7 @@ abstract class AbstractFragmentObject extends TextFragment
 
     public function __toString()
     {
-        $attributes = ' ';//(count($this->attributes)>0?' ':'');
+        $attributes = ($this->hasAttributes()?' ':'');
         $inner = '';
 
         if(count($this->attributes)>0){
@@ -184,8 +205,19 @@ abstract class AbstractFragmentObject extends TextFragment
 
         foreach ($this->innerFragments as $fragment){$inner.=$fragment;}
 
-        return sprintf($this->getTagStart()."%s%s".$this->getTagEnd()."%s".$this->getTagStart().$this->getTagClose()."%s".$this->getTagEnd(),
-            $this->name,$attributes,$inner,$this->name);
+        if($this->getMetaInfo('singleTag',"false")==="true"){
+            return sprintf($this->getTagStart()."%s%s".$this->getTagClose().$this->getTagEnd(),
+                $this->name,
+                $attributes,
+            );
+        }else{
+            return sprintf($this->getTagStart()."%s%s".$this->getTagEnd()."%s".$this->getTagStart().$this->getTagClose()."%s".$this->getTagEnd(),
+                $this->name,
+                $attributes,
+                $inner,
+                $this->name
+            );
+        }
     }
     public function toJson(): string
     {
@@ -261,20 +293,20 @@ abstract class AbstractFragmentObject extends TextFragment
     public function getInnerFragment(int $index):?TextFragment {
         return $this->innerFragments[$index];
     }
-    public function getInnerFragmentNames(bool $grouped = false):array{
-        $result = ($grouped? [$this->getFragmentTypeName() => [$this->getName()]] : [$this->getName()]);
+    public function getInnerFragmentNames(bool $grouped = false, bool $includeCurrent = false):array{
+        $result = ($includeCurrent ? ($grouped? [$this->getFragmentTypeName() => [$this->getName()]] : [$this->getName()]) : []);
 
         foreach ($this->getInnerFragments() as $innerFragment){
             if($innerFragment instanceof AbstractFragmentObject){
                 if($grouped){
-                    foreach ($innerFragment->getInnerFragmentNames(true) as $groupKey=>$groupValue){
+                    foreach ($innerFragment->getInnerFragmentNames($grouped,true) as $groupKey=>$groupValue){
                         foreach ($groupValue as $name){
                             if(!isset($result[$groupKey])){$result[$groupKey]=[];}
                             $result[$groupKey][] = $name;
                         }
                     }
                 }else{
-                    foreach ($this->getInnerFragmentNames(false) as $name){
+                    foreach ($this->getInnerFragmentNames(false, true) as $name){
                         $result[] = $name;
                     }
                 }

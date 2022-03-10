@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../Divi-Gutenberg-Converter/.idea/Divi-Gutenberg-Converter.iml" filepath="$PROJECT_DIR$/../Divi-Gutenberg-Converter/.idea/Divi-Gutenberg-Converter.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Shortcode.iml" filepath="$PROJECT_DIR$/.idea/Shortcode.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../construktiv.de-2017/.idea/construktiv.de-2017.iml" filepath="$PROJECT_DIR$/../construktiv.de-2017/.idea/construktiv.de-2017.iml" />
     </modules>
   </component>
 </project>

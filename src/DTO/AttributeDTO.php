@@ -10,12 +10,13 @@ class AttributeDTO extends DTO
     public $value;
     public string $type;
 
-    public static function create($name, $value):AttributeDTO {
+    public static function create($name, $value=''):AttributeDTO {
         $dto = new AttributeDTO();
 
         $dto->name = $name;
         if(empty($value)){
             $dto->type = 'flag';
+            $dto->value = '';
         }else{
             $dto->type = str_contains(strtolower($value),'true') || str_contains(strtolower($value),'false') ? 'boolean' :(is_numeric($value)?'number':'string');
             $dto->value = str_replace(['"',"'"],['',''],$value);// $value;// ($dto->type==='string' && ($value[0]==='"' || $value[0]==="'"))? substr($value,1,strlen($value)-2) : $value;
@@ -23,12 +24,7 @@ class AttributeDTO extends DTO
                 $dto->value = str_contains(strtolower($value),'true');
             }
         }
-        if($dto->name==='bb_built'){
-            /*echo "<pre>";
-            var_dump($dto);
-            die();*/
-        }
-        //die($dto->name);
+
         return $dto;
     }
 

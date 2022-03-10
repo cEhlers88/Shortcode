@@ -62,6 +62,8 @@ class TextFragment
         return $defaultValue;
     }
     final public function getMetaInfos():array {
-        return $this->metaInfos;
+        return array_merge($this->metaInfos,[
+            "raw" => $this->getRaw()
+        ]);
     }
 }

@@ -151,6 +151,15 @@ class ShortcodeConverter extends DecisionSupportManager
                 $resultDTO->unregulatedFragmentNames = array_merge($resultDTO->unregulatedFragmentNames,$convertedInner->unregulatedFragmentNames);
                 $resultDTO->messages = array_merge($resultDTO->messages,$convertedInner->messages);
 
+                $childObjectNames = '';
+                $innerObjectNameGroups = $parsedFragment->getInnerFragmentNames(true);
+                foreach ($innerObjectNameGroups as $childGroup){
+                    foreach ($childGroup as $childObjectName){
+                        $childObjectNames .= $childObjectName . ', ';
+                    }
+                }
+                $parsedFragment->addMetaInfo('childObjects',substr($childObjectNames,0,strlen($childObjectNames)-2));
+
                 $assignmentDTO = ConvertAssignmentDTO::create($parsedFragment,$parsedFragment->getInnerFragments(),$convertedInner->fragments);
                 $assignmentDTO->parentFragmentObject = $parentFragment;
                 $runRules = true;
