@@ -19,6 +19,10 @@ class ShortcodeConverter extends DecisionSupportManager
 {
     private const EXECUTION_TYPE_CONVERT = "EXECUTION_TYPE_CONVERT";
     private const EXECUTION_TYPE_VALIDATE = "EXECUTION_TYPE_VALIDATE";
+
+    private const DECISION_PRECOMPILE_LT_GT = "DECISION_PRECOMPILE_LT_GT";
+    private const DECISION_IGNORE_DISABLED= "DECISION_IGNORE_DISABLED";
+
     private string $executionType;
     private ?\mysqli $connection;
 
@@ -40,16 +44,18 @@ class ShortcodeConverter extends DecisionSupportManager
         $this->connection = null;
 
         $this->addDecisionSupport(DecisionSupportDTO::create(
-            'precompile_ltgt',
-            '&lt; und &gt; vorkompilieren',
+            self::DECISION_PRECOMPILE_LT_GT,
+            'Precompile &lt; and &gt;',
             DecisionSupportDTO::DecisionSupportType_YesNo,
             'false',
+            'Precompile &lt; and &gt; before locating DOM-Elements'
         ));
         $this->addDecisionSupport(DecisionSupportDTO::create(
-            'ignore_disabled',
-            'Deaktivierte ignorieren',
+            self::DECISION_IGNORE_DISABLED,
+            'Ignore disabled shortcodes',
             DecisionSupportDTO::DecisionSupportType_YesNo,
             'true',
+            'Set "true", if you want to ignore shortcodes, that having the attribute "disabled" to "on".'
         ));
     }
 
@@ -124,7 +130,7 @@ class ShortcodeConverter extends DecisionSupportManager
         }elseif (is_array($shortcodes)){
             $parsedFragments = $shortcodes;
         }else{
-            if($this->getDecisionSupportByName('precompile_ltgt')->value==='true'){
+            if($this->getDecisionSupportByName(self::DECISION_PRECOMPILE_LT_GT)->value==='true'){
                 $shortcodes = str_replace(['&lt;','&gt;'],['<','>'],$shortcodes);
             }
 
@@ -167,8 +173,7 @@ class ShortcodeConverter extends DecisionSupportManager
                 if($assignmentDTO->fragmentObject->getAttributeValue('disabled','off')==='on'){
                     // disabled
                     $parsedFragment->addMetaInfo('disabled','true');
-
-                    if($this->getDecisionSupportByName('ignore_disabled')->value==='true'){
+                    if($this->getDecisionSupportByName(self::DECISION_IGNORE_DISABLED)->value==='true'){
                         $runRules = false;
                     }
                 }
@@ -318,8 +323,16 @@ class ShortcodeConverter extends DecisionSupportManager
     public function convertByDatabaseId(int $id):ConverterResultDTO {
         mysqli_set_charset( $this->connection, 'utf8');
         $result = mysqli_query($this->connection, "SELECT post_content FROM wp_posts WHERE ID=".$id.";");
-        $result = $result->fetch_row()[0];
-        return $this->convert($result);
+        $row = $result->fetch_row();
+
+        if($row){
+            return $this->convert($row[0]);
+        }else{
+            $dto = new ConverterResultDTO();
+            $dto->hadError = true;
+            $dto->messages[] = MessageDTO::create(MessageDTO::MESSAGE_TYPE_ERROR,'Data not found','not_found');
+            return $dto;
+        }
     }
 
     public function convert($shortcodes):ConverterResultDTO{

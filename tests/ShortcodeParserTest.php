@@ -2,6 +2,8 @@
 
 namespace CEhlers\Shortcode\Tests;
 
+use CEhlers\Shortcode\DomElement;
+use CEhlers\Shortcode\DTO\AttributeDTO;
 use CEhlers\Shortcode\Shortcode;
 use CEhlers\Shortcode\ShortcodeParser;
 use CEhlers\Shortcode\TextFragment;
@@ -34,10 +36,23 @@ class ShortcodeParserTest extends TestCase
         $this->assertSame("Test", $parsed[1]->getName());
     }
     public function testParseShortcodeAndTextFragment(){
-        $parsed = ShortcodeParser::parse("[Test][/Test]<p>test</p>");
+        $parsed = ShortcodeParser::parse("[Test][/Test]test");
         $this->assertCount(2,$parsed);
         $this->assertInstanceOf(Shortcode::class, $parsed[0]);
         $this->assertInstanceOf(TextFragment::class, $parsed[1]);
+    }
+    public function testParseShortcodeAndDomElement(){
+        $parsed = ShortcodeParser::parse("[Test][/Test]<p>test</p>");
+        $this->assertCount(2,$parsed);
+        $this->assertInstanceOf(Shortcode::class, $parsed[0]);
+        $this->assertInstanceOf(DomElement::class, $parsed[1]);
+    }
+    public function testParseDomElementTextAndShortcode(){
+        $parsed = ShortcodeParser::parse("<p>test</p>123[Test][/Test]");
+        $this->assertCount(3,$parsed);
+        $this->assertInstanceOf(DomElement::class, $parsed[0]);
+        $this->assertInstanceOf(TextFragment::class, $parsed[1]);
+        $this->assertInstanceOf(Shortcode::class, $parsed[2]);
     }
     public function testParseAttribute(){
         $attributeName = 'attr1';
@@ -71,21 +86,60 @@ class ShortcodeParserTest extends TestCase
         $this->assertSame("boolean",$parsed[0]->getAttributes()[4]->type);
     }
 
+    public function testParseDomElementTextAndShortcodeWithAttributes(){
+        $testClass1 = 'foo1';
+        $testClass2 = 'foo2';
+        $testFlag1 = 'bar1';
+        $testFlag2 = 'bar2';
+
+        $parsed = ShortcodeParser::parse("
+            <p class='$testClass1' $testFlag1>test</p>
+            123
+            [Test class='$testClass2' $testFlag2 dummy][/Test]
+        ");
+
+        $this->assertCount(3,$parsed);
+        $this->assertInstanceOf(DomElement::class, $parsed[0]);
+        $this->assertInstanceOf(TextFragment::class, $parsed[1]);
+        $this->assertInstanceOf(Shortcode::class, $parsed[2]);
+
+        $this->assertCount(2,$parsed[0]->getAttributes());
+        $this->assertCount(3,$parsed[2]->getAttributes());
+
+        $this->assertSame($testClass1, $parsed[0]->getAttributes()[0]->value);
+        $this->assertSame('flag', $parsed[0]->getAttributes()[1]->type);
+        $this->assertSame($testFlag1, $parsed[0]->getAttributes()[1]->name);
+
+        $this->assertSame($testClass2, $parsed[2]->getAttributes()[0]->value);
+        $this->assertSame('flag', $parsed[2]->getAttributes()[1]->type);
+        $this->assertSame($testFlag2, $parsed[2]->getAttributes()[1]->name);
+        $this->assertSame('flag', $parsed[2]->getAttributes()[2]->type);
+        $this->assertSame('dummy', $parsed[2]->getAttributes()[2]->name);
+    }
+
     public function testSingleTags(){
         $parsed = ShortcodeParser::parse("[foo][bar foo='bar'/][bar2][bar foo='bar2'/][/bar2][/foo]");
         $this->assertCount(2,$parsed[0]->getInnerFragments());
         $this->assertSame('bar',$parsed[0]->getInnerFragment(0)->getAttributeValue('foo'));
     }
+
     public function testSingleTagAttributes(){
-        $testValue = 'value123456789';
-        $testValue2 = 'value987654321';
+        array_map(function($format){
+            $testValue = 'value123456789';
+            $testValue2 = 'value987654321';
 
-        $parsed = ShortcodeParser::parse("[foo bar='".$testValue."' lala='".$testValue2."'/]");
-        $this->assertCount(1,$parsed);
-        $this->assertCount(2,$parsed[0]->getAttributes());
+            $parsed = ShortcodeParser::parse(sprintf($format, "bar='".$testValue."'", "dummy", "lala='".$testValue2."'"));
 
-        $this->assertSame($testValue,$parsed[0]->getAttributeValue('bar'));
-        $this->assertSame($testValue2,$parsed[0]->getAttributeValue('lala'));
+            $this->assertCount(1,$parsed);
+            $this->assertCount(3,$parsed[0]->getAttributes());
+
+            $this->assertSame($testValue,$parsed[0]->getAttributeValue('bar'));
+            $this->assertSame($testValue2,$parsed[0]->getAttributeValue('lala'));
+        },[
+            "[foo %s %s %s /]",
+            "[foo %s %s %s/]",
+            "[foo %s%s %s/]",
+        ]);
     }
 
     public function test(){
@@ -95,5 +149,4 @@ class ShortcodeParserTest extends TestCase
         $this->assertCount(3, $parsed[0]->getInnerFragments());
         $this->assertCount(1, $parsed[0]->getInnerFragment(0)->getInnerFragments());
     }
-
 }

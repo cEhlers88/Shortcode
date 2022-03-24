@@ -7,6 +7,7 @@ use CEhlers\Shortcode\TextFragment;
 
 interface IConverterModule extends IDecisionSupportManager
 {
+    public function getDescription():string;
     public function getName():string;
 
     /**

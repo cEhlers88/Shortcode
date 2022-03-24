@@ -7,6 +7,11 @@ use CEhlers\Shortcode\DTO\DecisionSupportDTO;
 
 abstract class AbstractConverterModule extends DecisionSupportManager implements IConverterModule
 {
+    public function getDescription(): string
+    {
+        return "";
+    }
+
     public function precompileFragments(array $fragments): array
     {
         return $fragments;

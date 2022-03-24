@@ -2,14 +2,20 @@
 
 namespace CEhlers\Shortcode;
 
+use CEhlers\Shortcode\DTO\ParserOptionsDTO;
+
 class ShortcodeParser
 {
     /**
      * @return TextFragment[]|Shortcode[]
      */
-    public static function parse(string $string):array{
+    public static function parse(string $string, ParserOptionsDTO $optionsDTO = null):array{
         $result = [];
         preg_match( '@\[([^<>&/\[\]\x00-\x20=]++)@', $string, $matches );
+        if(is_null($optionsDTO)){
+            $optionsDTO = ParserOptionsDTO::create();
+        }
+
         if(array_key_exists(1,$matches)){
             $shortcodeStart = strpos($string,'['.$matches[1]);
             $shortcodeEndBegin = strpos($string,'[/'.$matches[1].']');
@@ -30,7 +36,11 @@ class ShortcodeParser
             if($shortcodeStart>0){
                 $raw = substr($string,0,$shortcodeStart);
                 if(!empty(trim($raw))){
-                    $result[] = new TextFragment($raw);
+                    if($optionsDTO->composeParser){
+                        $result = array_merge($result, DomParser::parse($raw));
+                    }else{
+                        $result[] = new TextFragment($raw);
+                    }
                 }
             }
 
@@ -40,13 +50,16 @@ class ShortcodeParser
             if($shortcodeLastEnd<strlen($string)){
                 $rest = substr($string,$shortcodeLastEnd);
                 if(!empty(trim($rest))){
-                $result = array_merge($result,ShortcodeParser::parse($rest));
+                $result = array_merge($result,ShortcodeParser::parse($rest, $optionsDTO));
                 }
             }
         }else{
             if(!empty($string)){
-                $result = array_merge($result, DomParser::parse($string));
-                //$result[] = new TextFragment($string);
+                if($optionsDTO->composeParser){
+                    $result = array_merge($result, DomParser::parse($string));
+                }else{
+                    $result[] = new TextFragment($string);
+                }
             }
         }
 
