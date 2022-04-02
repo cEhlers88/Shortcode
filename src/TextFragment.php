@@ -51,6 +51,10 @@ class TextFragment
         return $this;
     }
 
+    public function getInnerText():string {
+        return $this->rawText;
+    }
+
     final public function addMetaInfo(string $metaKey, string $metaValue):TextFragment {
         $this->metaInfos[$metaKey] = $metaValue;
         return $this;

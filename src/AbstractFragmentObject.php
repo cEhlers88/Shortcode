@@ -316,6 +316,15 @@ abstract class AbstractFragmentObject extends TextFragment
 
         return $result;
     }
+    public function getInnerText(): string
+    {
+        $inner = "";
+        foreach ($this->innerFragments as $fragment){
+            $inner .= $fragment->getInnerText();
+        }
+        return $inner;
+    }
+
     public function setInnerFragments(array $fragments):AbstractFragmentObject {
         $this->innerFragments = $fragments;
         return $this;

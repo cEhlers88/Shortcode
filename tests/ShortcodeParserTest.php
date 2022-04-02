@@ -148,5 +148,6 @@ class ShortcodeParserTest extends TestCase
         $this->assertCount(1, $parsed);
         $this->assertCount(3, $parsed[0]->getInnerFragments());
         $this->assertCount(1, $parsed[0]->getInnerFragment(0)->getInnerFragments());
+        $this->assertSame("ContentContent", $parsed[0]->getInnerText());
     }
 }
